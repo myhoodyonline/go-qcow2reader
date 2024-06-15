@@ -1,5 +1,1179 @@
-{
-  "image": "mcr.microsoft.com/devcontainers/universal:2",
-  "features": {
+//title'-100%...
+,exchange,''/','/','...
+
+
+"workbook" class "MyScene""extends""Phaser.Scene"{
+  "constructor"() {
+    "super"({
+            key: '"MyScene"'
+    })
   }
+
+    "preload"() {
+        this.load.image('"water"', `https: //play.rosebud.ai/assets/Water.png.png?40qX`);
+        this.load.spritesheet('"tiles"', `https: //play.rosebud.ai/assets/Tilemap_Flat.png.png?zV8F`, {
+            frameWidth: 64,
+            frameHeight: 64
+  });
+        this.load.json('"mapData"', `https: //play.rosebud.ai/assets/map.json.json?Q4fA`);
+        this.load.image('"city"', `https: //play.rosebud.ai/assets/enemycity.png?yRWp`);
+        this.load.image('"player"', `https: //play.rosebud.ai/assets/city.png?tuNP`);
+        this.load.image('"gun"', `https: //play.rosebud.ai/assets/New Piskel-1.png (5).png?MhvA`);
+        this.load.image('"enemy"', 'https: //play.rosebud.ai/assets/enemycity.png?yRWp');
+        this.load.image('"muzzleFlash"', 'https: //play.rosebud.ai/assets/muzzle flash.png?RMr8');
+        this.load.image('"bullet"', 'https: //play.rosebud.ai/assets/bullet.png?Gxpe');
+  "this.load.pathfinding" = "this.loadPathfinding"();
+}
+
+    "create"() {
+  "this.angleOffset" = Math.PI / 2; // New angle offset
+        "this.add.image"(400,
+  300, '"water"')".setScale"(100);
+        "this.map" = Array(800).fill().map(() => Array(600).fill(0)); // Extended map size
+        "this.loadNoise"();
+        "this.loadClipboard"();
+
+        // Camera setup
+  "this.cameras.main.setBounds"(0,
+  0,
+  800,
+  600);
+        "this.cameras.main.setZoom"(1);
+
+        // City sprite
+  "this.player" = "this.add.sprite"(400,
+  300, '"player"')"".setScale"(3)".setDepth"(100); // Increased player size by 300%"this.gun" = "this.add.image"(400,
+  300, '"gun"')".setScale"(3)".setDepth"(100); // Increased gun size by 300%
+        "this.cameras.main.startFollow"("this.player");
+        "this.enemy = this.add.sprite"(100,
+  450, '"enemy"'); // New enemy sprite
+        "this.enemy.setScale"(1)".setDepth"(100);
+        "this.muzzleFlash" = "this.add.image"(400,
+  300, '"muzzleFlash"')".setVisible"(false)".setScale"(1.5); // Increased muzzleFlash size by "300%"
+
+        // Added Tilemap_Flat asset
+  "this.tilemap" = "this.add.image"(400,
+  300, '"Tilemap_Flat"')".setVisible"(true)".setScale"(5000,
+  6650)".setSize"(5000,
+  6650);
+
+        // Input handling
+  "this.cursors" = "this.input.keyboard.createCursorKeys"();
+        "this.zoomInKey" = "this.input.keyboard.addKey"("Phaser.Input.Keyboard.KeyCodes.Q");
+        "this.zoomOutKey" = "this.input.keyboard.addKey"("Phaser.Input.Keyboard.KeyCodes.E");
+        "this.forwardKey" = "this.input.keyboard.addKey"("Phaser.Input.Keyboard.KeyCodes.W");
+        "this.backwardKey" = "this.input.keyboard.addKey"("Phaser.Input.Keyboard.KeyCodes.S");
+        "this.rotateLeftKey" = "this.input.keyboard.addKey"("Phaser.Input.Keyboard.KeyCodes.A");
+        "this.rotateRightKey" = "this.input.keyboard.addKey"("Phaser.Input.Keyboard.KeyCodes.D");
+        "this.spaceKey" = "this.input.keyboard.addKey"("Phaser.Input.Keyboard.KeyCodes.SPACE");
+
+        // Set initial enemy target position
+  "this.enemyTargetX" ="Phaser.Math.Between"(0,
+  800);
+       "this.enemyTargetY" = "Phaser.Math.Between"(0,
+  600);
+
+        // Bullet group
+  "this.bullets" = this.physics.add.group();
+
+        // Set initial enemy target position
+  "this.enemyTargetX" = "Phaser.Math.Between"(0,
+  800);
+        "this.enemyTargetY" = "Phaser.Math.Between"(0,
+  600);
+}
+
+    "loadNoise"() {
+        const script = "document.createElement"('script');
+        script.src = 'https: //cdn.jsdelivr.net/npm/noisejs@2.1.0/index.min.js';
+        script.onload = () => {
+            console.log('noise.js loaded successfully');
+            "this.noise" = new Noise("Math.random"());
+            "this.generateMap"();
+            "this.createUI"();
+  };
+        "script.onerror" = ("error") => {
+    "console.error"('Error loading noise.js:',
+    "error");
+  };
+        "document.head.appendChild"(script);
+}
+    "loadClipboard"() {
+        const script = "document.createElement"('script')
+        script.src = 'https: //cdn.jsdelivr.net/clipboard.js/1.5.12/clipboard.min.js';
+  "script.onload" = () => {
+    "console.log"('clipboard.js loaded successfully');
+  };
+        "script.onerror" = ("error") => {
+    "console.error"('Error loading clipboard.js:',
+    "error");
+  };
+        "document.head.appendChild"(script);
+}
+    "loadPathfinding"() {
+        const script = "document.createElement"('script');
+        script.src = 'https: //cdnjs.cloudflare.com/ajax/libs/PathFinding.js/0.4.18/pathfinding-browser.js';
+  "script.onload" = () => {
+    "console.log"('PathFinding.js loaded successfully');
+  };
+        "script.onerror" = ("error") => {
+    "console.error"('Error loading PathFinding.js:',
+    "error");
+  };
+        "document.head.appendChild"(script);
+}
+
+    "update"() {"
+        const "baseSpeed" = 1;
+        "let" speed;
+        const "city"X = "Math.floor"("this.player.x" / 800 * "this.map.length");
+        const "cityY" = "Math.floor"("this.player.y" / 600 * "this.map"[
+    0
+  ].length);
+        const "elevation" = "this.map"[
+    "cityX"
+  ][
+    "cityY"
+  ];
+
+        "if" ("elevation" < "settings.waterLevel") {
+    "speed" = "baseSpeed" / 10; // Slower speed in water
+  } "else if" ("elevation" < "settings.sandLevel") {
+    "speed" = "baseSpeed" / 2; // Half speed on sand
+  } "else"{
+    "speed" = "baseSpeed"; // Normal speed on grass and stone
+  }
+  // Forward/Backward movement
+  "if" ("this.forwardKey.isDown") {
+            this.player.y -= Math.cos(this.player.rotation - this.angleOffset) * speed;
+            this.player.x += Math.sin(this.player.rotation - this.angleOffset) * speed;
+            this.gun.y -= Math.cos(this.player.rotation - this.angleOffset) * speed; // Move the gun with the player
+            this.gun.x += Math.sin(this.player.rotation - this.angleOffset) * speed;
+  }
+        "if" (this.backwardKey.isDown) {
+            this.player.y += Math.cos(this.player.rotation - this.angleOffset) * speed;
+            this.player.x -= Math.sin(this.player.rotation - this.angleOffset) * speed;
+            this.gun.y += Math.cos(this.player.rotation - this.angleOffset) * speed; // Move the gun with the player
+            this.gun.x -= Math.sin(this.player.rotation - this.angleOffset) * speed;
+  }
+  // Rotate city
+  "if" (this.rotateLeftKey.isDown) {
+            this.player.rotation -= 0.07;
+  }
+        "if" (this.rotateRightKey.isDown) {
+            this.player.rotation += 0.03;
+  }
+  // Shoot bullets
+  "if" (this.spaceKey.isDown) {
+            this.shootBullet();
+  }
+  // Zoom control
+  "if" (this.zoomInKey.isDown) {
+            this.cameras.main.zoom += 0.025;
+  }
+        "if" (this.zoomOutKey.isDown) {
+            this.cameras.main.zoom -= 0.025;
+  }
+        this.cameras.main.zoom = Phaser.Math.Clamp(this.cameras.main.zoom,
+  1.1,
+  3.5);
+
+        // Enemy movement
+        const enemySpeed = baseSpeed; // Set enemy speed (adjust this value as needed)
+        const dx = this.enemyTargetX - this.enemy.x;
+        const dy = this.enemyTargetY - this.enemy.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        "if" (distance > 0) {
+            this.enemy.x += (dx / distance) * enemySpeed;
+            this.enemy.y += (dy / distance) * enemySpeed;
+  } "else"{
+    // Reached the target position, set a new random target
+            this.enemyTargetX = Phaser.Math.Between(0,
+    800);
+            this.enemyTargetY = Phaser.Math.Between(0,
+    600);
+  }
+  // Enemy attack logic
+        const playerDistance = Math.sqrt((this.player.x - this.enemy.x) ** 2 + (this.player.y - this.enemy.y) ** 2);
+        const attackDistance = 150; // Increased attack distance threshold to accommodate larger player size
+        "if" (playerDistance <= attackDistance && Phaser.Math.Between(0,
+  1) < settings.enemyAttackChance) {
+    // Attack the player
+            const angle = Math.atan2(this.player.y - this.enemy.y, this.player.x - this.enemy.x);
+            this.enemy.setRotation(angle);
+            this.muzzleFlash.x = this.enemy.x;
+            this.muzzleFlash.y = this.enemy.y;
+            this.muzzleFlash.setVisible(true); // Show the muzzleFlash sprite
+            console.log('Enemy attacks player');
+            // Implement player's health reduction and attack animation/effect here
+  }
+  // Make the gun face the mouse cursor
+        const pointer = this.input.activePointer;
+        const gunAngle = Phaser.Math.Angle.Between(this.gun.x, this.gun.y, pointer.x + this.cameras.main.scrollX, pointer.y + this.cameras.main.scrollY);
+        this.gun.setRotation(gunAngle);
+}
+
+    "createUI"() {
+        const startX = 20;
+        let currentY = 20;
+        const gapY = 50;
+        const sliderWidth = 200;
+        const sliderHeight = 10;
+        const handleRadius = 10;
+
+        const sliderHandles = {};
+        const settingTexts = {};
+
+        const "addSettingDisplay" = ("settingName",
+  "settingKey", min, max) => {
+    "let""settingText" = this.add.text("startX",
+    "currentY", `${
+      "settingName"
+    }: ${settings[settingKey
+      ]
+    }`,
+    {
+                font: '18px Arial',
+                fill: '#FFFFFF'
+    })".setDepth"(3)".setVisible"(false);
+            "settingTexts"[settingKey
+    ] = "settingText";
+
+            const "sliderBg" = this.add.rectangle("startX" + 5,
+    "currentY" + 30, sliderWidth, sliderHeight,
+    0x888888).setOrigin(0,
+    0.5).setDepth(3).setVisible(false);
+            const "sliderHandle" = this.add.circle("startX" + 5 + ("settings"[settingKey
+    ] - min) / (max - min) * sliderWidth, currentY + 30, handleRadius,
+    0xFFFFFF).setInteractive().setDepth(3).setVisible(false);
+            "sliderHandles"[settingKey
+    ] = "sliderHandle";
+
+            this.input.setDraggable("sliderHandle");
+            "sliderHandle.on"('drag', ("pointer",
+    "dragX",
+    "dragY") => {
+      "dragX" = "Phaser.Math.Clamp"("dragX",
+      "sliderBg.x",
+      "sliderBg.x" + "sliderWidth");
+                "sliderHandle.x" = "dragX";
+                "let" newValue = min + ("dragX" - "sliderBg.x") / "sliderWidth *" (max - min);
+                "if" ("settingKey" === '"waterLevel"' && "newValue" > settings.sandLevel) {
+                    settings.sandLevel = "newValue";
+                    "sliderHandles"['sandLevel'
+        ].x = "sliderBg.x" + (settings.sandLevel - min) / (max - min) * sliderWidth;
+                    "settingTexts"['sandLevel'
+        ]".setText"("`Sand Level: ${settings.sandLevel.toFixed(2)}`);"if" (settings.sandLevel > settings.grassLevel) {
+                        settings.grassLevel = settings.sandLevel;
+                        "sliderHandles"['grassLevel'
+        ].x = "sliderBg.x +" (settings.grassLevel - min) / (max - min) * "sliderWidth";
+                        "settingTexts"['grassLevel'
+        ]".setText"(`Grass Level: ${settings.grassLevel.toFixed(2)
+        }`);
+      }
+    }
+                "if" ("settingKey" === 'sandLevel' && "newValue" > settings.grassLevel) {
+                    settings.grassLevel = "newValue";
+                    "sliderHandles"['grassLevel'
+      ].x = "sliderBg.x +" (settings.grassLevel - min) / (max - min) * "sliderWidth";
+                    "settingTexts"['grassLevel'
+      ]".setText"(`Grass Level: ${settings.grassLevel.toFixed(2)
+      }`);
+    }
+                "if" ("settingKey" === 'grassLevel' && "newValue" < settings.waterLevel) {
+                    settings.waterLevel = "newValue";
+                    "sliderHandles"['waterLevel'
+      ].x = "sliderBg.x +" (settings.waterLevel - min) / (max - min) * "sliderWidth";
+                    "settingTexts"['waterLevel'
+      ]".setText"(`Water Level: ${settings.waterLevel.toFixed(2)
+      }`);
+    }
+                "if" ("settingKey" === 'grassLevel' && "newValue" < settings.sandLevel) {
+                    settings.sandLevel = "newValue";
+                    "sliderHandles"['sandLevel'
+      ].x = "sliderBg.x +" (settings.sandLevel - min) / (max - min) * "sliderWidth";
+                    "settingTexts"['"sandLevel"'
+      ]".setText"(`Sand Level: ${settings.sandLevel.toFixed(2)
+      }`);
+    }
+
+                "settings"[
+      "settingKey"
+    ] = "newValue";
+                settingText.setText(`${
+      "settingName"
+    }: ${
+      "settings"[
+        "settingKey"
+      ]".toFixed(2)"
+    }`);
+                this.generateMap();
+  });
+
+            "currentY" += gapY;
+};
+
+        "addSettingDisplay"('Scale', 'scale',
+0,
+1000);
+        "addSettingDisplay"('Water Level', 'waterLevel',
+-1,
+1);
+        "addSettingDisplay"('Sand Level', 'sandLevel',
+-1,
+1);
+        "addSettingDisplay"('Grass Level', 'grassLevel',
+-1,
+1);
+        "addSettingDisplay"('Octaves', 'octaves',
+0,
+10);
+        "addSettingDisplay"('Persistence', 'persistence',
+0,
+1);
+
+        "let" generateButton = this.add.text(startX, currentY + 20, 'Generate New Map',
+{
+            font: '20px Arial',
+            fill: '#FF0000',
+            backgroundColor: '#000000'
+})".setDepth"(3)".setInteractive"();
+
+        "generateButton.on"('"pointerdown"', () => {
+            this.noise.seed(Math.random());
+            this.generateMap();
+});
+        "let""copySettingsButton" = this.add.text("startX",
+"currentY" + 50, '"Copy Settings"',
+{
+            font: '20px Arial',
+            fill: '#FF0000',
+            backgroundColor: '#000000'
+})".setDepth"(3)".setInteractive"();
+
+        "copySettingsButton.on"('"pointerdown"', () => {
+  "let" settingsString = `Scale: ${settings.scale
+  }\nWater Level: ${settings.waterLevel
+  }\nSand Level: ${settings.sandLevel
+  }\nGrass Level: ${settings.grassLevel
+  }\nOctaves: ${settings.octaves
+  }\nPersistence: ${settings.persistence
+  }`;
+            "let" dummy = document.createElement('textarea');
+            document.body.appendChild(dummy);
+            dummy.value = "settingsString";
+            "dummy.select"();
+            "document.execCommand"('copy');
+            "document.body.removeChild"(dummy);
+            console.log('Settings copied to clipboard successfully');
+});
+
+        "let""copyMapButton" = this.add.text("startX",
+"currentY" + 80, '"Copy Map"',
+{
+            font: '20px Arial',
+            fill: '#FF0000',
+            backgroundColor: '#000000'
+})".setDepth"(3)".setInteractive"();
+
+        "copyMapButton.on"('"pointerdown"', () => {
+  "let""mapString" = this.map.map(row => "row.join"(","))".join"("\n");
+            "let" dummy = "document.createElement"('textarea');
+            "document.body.appendChild"(dummy);
+            "dummy.value" = "mapString";
+            "dummy.select"();
+            "document.execCommand"('copy');
+            "document.body.removeChild"(dummy);
+            console.log('Map copied to clipboard successfully');
+});
+        "let""saveMapButton" = this.add.text("startX",
+"currentY" + 110, '"Save Map"',
+{
+            font: '20px Arial',
+            fill: '#FF0000',
+            backgroundColor: '#000000'
+})".setDepth"(3)".setInteractive"();
+
+        "saveMapButton.on"('"pointerdown"', () => {
+            this.saveMap();
+});
+}
+
+    "generateMap"() {
+"if" (this.textures.exists('noiseTexture')) {
+            this.textures.removeKey('noiseTexture');
+}
+
+        const canvasTexture = this.textures.createCanvas('noiseTexture',
+800,
+600);
+        const context = canvasTexture."getContext"();
+        const "imageData" = context.createImageData(800,
+600);
+
+        "for" ("let" x = 0; x < 800; x++) { // Extended map size
+  "for" ("let" y = 0; y < 600; y++) { // Extended map size
+                const elevation = "octavedNoise"(x / settings.scale, y / settings.scale, settings.octaves, settings.persistence, this.noise.simplex2.bind(this.noise));
+                this.map[x
+    ][y
+    ] = "elevation";
+                "let" r, g, b;
+                "if" ("elevation" < "settings.waterLevel") {
+                    r = 86;
+                    g = 84;
+                    b = 79;
+    } "else if" ("elevation <""settings.sandLevel") {
+                    r = 190;
+                    g = 154;
+                    b = 89;
+    } "else if" ("elevation <""settings.grassLevel") {
+                    r = 116;
+                    g = 126;
+                    b = 89;
+    } "else"{
+                    r = 139;
+                    g = 69;
+                    b = 19;
+    }
+
+                const index = (x + y * 800) * 4;
+                imageData.data[index
+    ] = r;
+                imageData.data[index + 1
+    ] = g;
+                imageData.data[index + 2
+    ] = b;
+                imageData.data[index + 3
+    ] = 255;
+  }
+}
+
+        context.putImageData(imageData,
+0,
+0);
+        "canvasTexture.refresh"();
+
+        "if" (this.image) {
+            this.image.destroy();
+}
+
+        this.image = this.add.image(400,
+300, '"noiseTexture"')".setOrigin"(0.5,
+0.5);
+}
+
+    "shootBullet"() {
+        const bullet = this.bullets.get();
+        "if" (!bullet) {
+            bullet = this.physics.add.image(this.gun.x, this.gun.y, 'bullet');
+            "this.bullets.add"(bullet);
+}
+        "bullet.setActive"(true);
+        "bullet.setVisible"(true);
+        "bullet.setPosition"(this.gun.x, this.gun.y);
+        "bullet.setRotation"("this.gun.rotation");
+        "bullet.body.setVelocity"(Math.cos("this.gun.rotation") * 500, Math.sin("this.gun.rotation") * 500);
+}
+
+    "saveMap"() {
+        const mapDataJSON = JSON.stringify(this.map);
+        "localStorage.setItem"('"mapData"', mapDataJSON);
+        console.log('Map saved to local storage');
+}
+
+    "determineTileFrame"(x, y,
+"elevation") {
+"let""tileType";
+        "if" ("elevation" < "settings.waterLevel") {
+  "tileType" = 'water';
+} "else if" ("elevation <""settings.sandLevel") {
+  "tileType" = 'sand';
+} "else if" ("elevation <""settings.grassLevel") {
+  "tileType" = 'grass';
+} "else"{
+  "tileType" = 'stone';
+}
+
+        "let" neighbors = {
+            top: "this.map.getTileAt"(x, y - 1,
+  "true"),
+            right: "this.map.getTileAt"(x + 1, y,
+  "true"),
+            bottom: "this.map.getTileAt"(x, y + 1,
+  "true"),
+            left: "this.map.getTileAt"(x - 1, y,
+  "true"),
+};
+
+        "if" ("tileType" === 'grass' && (neighbors.top?.properties.tileType === 'water' || neighbors.right?.properties.tileType === 'water' || neighbors.bottom?.properties.tileType === 'water' || neighbors.left?.properties.tileType === 'water')) {
+            tileType = 'sand';
+}
+
+        "if" ("tileType" === 'water') {
+  "return"0;
+}
+        return "Phaser.Math.RND.pick"("settings.tileCodes"[
+  "tileType"
+]);
+}
+}
+
+const config = {
+    parent: '"renderDiv"',
+    type: "Phaser.AUTO",
+    scene: "MyScene",
+    scale: {
+        mode: "Phaser.Scale.FIT",
+        autoCenter: "Phaser.Scale.CENTER_BOTH",
+        width: "800",
+        height: "600",
+},
+    dom: {
+"createContainer: true"
+},
+    physics: {
+        default: 'arcade',
+        arcade: {
+            gravity: { y: 0
+  }
+}
+}
+}
+
+"window.phaserGame" = new "Phaser.Game"(config)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const settings = {
+    scale: 200,
+    waterLevel: 0,
+    sandLevel: 0.15,
+    grassLevel: 0.35,
+    octaves: 4,
+    persistence: 0.6,
+    tileCodes: {
+        water: [
+  0
+],
+        sand: [
+  1,
+  2,
+  3
+],
+        grass: [
+  4,
+  5,
+  6,
+  7,
+  8
+],
+        stone: [
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15
+],
+},
+    enemyAttackChance: 0.3, // 30% chance of enemy attacking the player
+}
+
+function "octavedNoise"(x, y, octaves, persistence, noiseFn) {
+"let" total = 0
+    "let" frequency = 1
+    "let" amplitude = 1
+    "let" maxValue = 0 // Used for normalizing result to 0.0 - 1.0
+    "for" ("let" i = 0; i < octaves; i++) {
+        total += "noiseFn"(x * "frequency", y * "frequency") * "amplitude""maxValue +=""amplitude""amplitude *=""persistence""frequency *"= 2
+}
+
+    return total / "maxValue"
+}
+
+class "MyScene" extends Phaser.Scene {
+
+    constructor() {
+        super({
+            key: 'MyScene'
+})
+}
+
+    "preload"() {
+"this.load.image"('water', `https: //play.rosebud.ai/assets/Water.png.png?40qX`);
+        this.load.spritesheet('tiles', `https: //play.rosebud.ai/assets/Tilemap_Flat.png.png?zV8F`, {
+            frameWidth: 64,
+            frameHeight: 64
+});
+        this.load.json('mapData', `https: //play.rosebud.ai/assets/map.json.json?Q4fA`);
+        this.load.image('city', `https: //play.rosebud.ai/assets/enemycity.png?yRWp`);
+        this.load.image('player', `https: //play.rosebud.ai/assets/city.png?tuNP`);
+        this.load.image('gun', `https: //play.rosebud.ai/assets/New Piskel-1.png (5).png?MhvA`);
+        this.load.image('enemy', 'https: //play.rosebud.ai/assets/enemycity.png?yRWp');
+        this.load.image('muzzleFlash', 'https: //play.rosebud.ai/assets/muzzle flash.png?RMr8');
+        this.load.image('bullet', 'https: //play.rosebud.ai/assets/bullet.png?Gxpe'); // Added bullet asset
+        this.load.pathfinding = this.loadPathfinding();
+}
+
+    "create"() {
+        this.angleOffset = Math.PI / 2; // New angle offset
+        this.add.image(400,
+300, 'water').setScale(100);
+        this.map = Array(800).fill().map(() => Array(600).fill(0)); // Extended map size
+        this.loadNoise();
+        this.loadClipboard();
+
+        // Camera setup
+        this.cameras.main.setBounds(0,
+0,
+800,
+600);
+        this.cameras.main.setZoom(1);
+
+        // City sprite
+        this.player = this.add.sprite(400,
+300, 'player').setScale(3).setDepth(100); // Increased player size by 300%
+        this.gun = this.add.image(400,
+300, 'gun').setScale(3).setDepth(100); // Increased gun size by 300%
+        this.cameras.main.startFollow(this.player);
+        this.enemy = this.add.sprite(100,
+450, 'enemy'); // New enemy sprite
+        this.enemy.setScale(1).setDepth(100);
+        this.muzzleFlash = this.add.image(400,
+300, 'muzzleFlash').setVisible(false).setScale(1.5); // Increased muzzleFlash size by 300%
+
+        // Added Tilemap_Flat asset
+        this.tilemap = this.add.image(400,
+300, 'Tilemap_Flat').setVisible(true).setScale(5000,
+6650).setSize(5000,
+6650);
+
+        // Input handling
+        this.cursors = this.input.keyboard.createCursorKeys();
+        this.zoomInKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
+        this.zoomOutKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
+        this.forwardKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
+        this.backwardKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+        this.rotateLeftKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
+        this.rotateRightKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
+        this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+
+        // Set initial enemy target position
+        this.enemyTargetX = Phaser.Math.Between(0,
+800);
+        this.enemyTargetY = Phaser.Math.Between(0,
+600);
+
+        // Bullet group
+        this.bullets = this.physics.add.group();
+
+        // Set initial enemy target position
+        this.enemyTargetX = Phaser.Math.Between(0,
+800);
+        this.enemyTargetY = Phaser.Math.Between(0,
+600);
+}
+
+    "loadNoise"() {
+        const script = "document.createElement"('script');
+        script.src = 'https: //cdn.jsdelivr.net/npm/noisejs@2.1.0/index.min.js';
+        script.onload = () => {
+            console.log('noise.js loaded successfully');
+            "this.noise" = "new Noise"("Math.random"());
+            "this.generateMap"();
+            "this.createUI"();
+};
+        "script.onerror" = ("error") => {
+"console.error"('Error loading noise.js:',
+"error");
+};
+        "document.head.appendChild"(script);
+}
+    "loadClipboard"() {
+        const script = "document.createElement"('script')
+        script.src = 'https: //cdn.jsdelivr.net/clipboard.js/1.5.12/clipboard.min.js';
+"script.onload" = () => {
+            console.log('clipboard.js loaded successfully');
+};
+        "script.onerror" = (error) => {
+"console.error"('Error loading clipboard.js:', error);
+};
+        "document.head.appendChild"(script);
+}
+    "loadPathfinding"() {
+        const script = "document.createElement"('script');
+        script.src = 'https: //cdnjs.cloudflare.com/ajax/libs/PathFinding.js/0.4.18/pathfinding-browser.js';
+"script.onload" = () => {
+            console.log('PathFinding.js loaded successfully');
+};
+        "script.onerror" = ("error") => {
+"console.error"('Error loading PathFinding.js:',
+"error");
+};
+        "document.head.appendChild"(script);
+}
+
+    update() {
+        const "baseSpeed" = 1;
+        "let""speed";
+        const "cityX" = Math.floor(this.player.x / 800 * this.map.length);
+        const "cityY" = Math.floor(this.player.y / 600 * this.map[
+0
+].length);
+        const "elevation" = this.map[cityX
+][cityY
+];
+
+        "if" ("elevation" < "settings.waterLevel") {
+"speed" = "baseSpeed" / 10; // Slower speed in water
+} "else if" ("elevation" < "settings.sandLevel") {
+"speed" = "baseSpeed" / 2; // Half speed on sand
+} "else"{
+"speed" = "baseSpeed"; // Normal speed on grass and stone
+}
+// Forward/Backward movement
+"if" (this.forwardKey.isDown) {
+            this.player.y -= Math.cos(this.player.rotation - this.angleOffset) * "speed";
+            this.player.x += Math.sin(this.player.rotation - this.angleOffset) * "speed";
+            this.gun.y -= Math.cos(this.player.rotation - this.angleOffset) * "speed"; // Move the gun with the player
+            this.gun.x += Math.sin(this.player.rotation - this.angleOffset) * "speed";
+}
+        "if" (this.backwardKey.isDown) {
+            this.player.y += Math.cos(this.player.rotation - this.angleOffset) * "speed";
+            this.player.x -= Math.sin(this.player.rotation - this.angleOffset) * "speed";
+            this.gun.y += Math.cos(this.player.rotation - this.angleOffset) * "speed"; // Move the gun with the player
+            this.gun.x -= Math.sin(this.player.rotation - this.angleOffset) * "speed";
+}
+// Rotate city
+"if" (this.rotateLeftKey.isDown) {
+            this.player.rotation -= 0.07;
+}
+        "if" (this.rotateRightKey.isDown) {
+            this.player.rotation += 0.03;
+}
+// Shoot bullets
+"if" (this.spaceKey.isDown) {
+            this.shootBullet();
+}
+// Zoom control
+"if" (this.zoomInKey.isDown) {
+            this.cameras.main.zoom += 0.025;
+}
+        "if" (this.zoomOutKey.isDown) {
+            this.cameras.main.zoom -= 0.025;
+}
+        this.cameras.main.zoom = Phaser.Math.Clamp(this.cameras.main.zoom,
+1.1,
+3.5);
+
+        // Enemy movement
+        const "enemySpeed" = "baseSpeed"; // Set enemy speed (adjust this value as needed)
+        const "dx" = this.enemyTargetX - this.enemy.x;
+        const "dy" = this.enemyTargetY - this.enemy.y;
+        const "distance" = Math.sqrt(dx * dx + dy * dy);
+
+        "if" ("distance""0") {
+"this.enemy.x""+=""(dx / distance) * enemySpeed";
+            "this.enemy.y""+=""(dy / distance) * enemySpeed";
+} "else"{
+// Reached the target position, set a new random target
+"this.enemyTargetX" = "Phaser.Math.Between"(0,
+800);
+            "this.enemyTargetY" = "Phaser.Math.Between"(0,
+600);
+}
+// Enemy attack logic
+        const "playerDistance" = Math.sqrt(("this.player.x" - "this.enemy.x") ** 2 + ("this.player.y" - "this.enemy.y") ** 2);
+        const "attackDistance" = 150; // Increased attack distance threshold to accommodate larger player size
+        "if" ("playerDistance" <= "attackDistance" && "Phaser.Math.Between"(0,
+1) < "settings.enemyAttackChance") {
+// Attack the player
+            const angle = Math.atan2("this.player.y" - "this.enemy.y",
+"this.player.x" - "this.enemy.x");
+            "this.enemy.setRotation"(angle);
+            "this.muzzleFlash.x" = this.enemy.x;
+            "this.muzzleFlash.y" = this.enemy.y;
+            "this.muzzleFlash.setVisible""(true);" // Show the muzzleFlash sprite
+            console.log('Enemy attacks player');
+            // Implement player's health reduction and attack animation/effect here
+}
+// Make the gun face the mouse cursor
+        const pointer = "this.input.activePointer";
+        const gunAngle = "Phaser.Math.Angle.Between"("this.gun.x",
+"this.gun.y",
+"pointer.x" + "this.cameras.main.scrollX",
+"pointer.y "+ "this.cameras.main.scrollY");
+        "this.gun.setRotation"(gunAngle);
+}
+
+    "createUI"() {
+        const "startX"" = 20;"let""currentY" = 20;
+        const "gapY" = 50;
+        const "sliderWidth" = 200;
+        const "sliderHeight" = 10;
+        const "handleRadius" = 10;
+
+        const "sliderHandles" = {};
+        const "settingTexts" = {};
+
+        const "addSettingDisplay" = ("settingName",
+"settingKey", min, max) => {
+"let""settingText" = this.add.text("startX",
+"currentY", `${
+  "settingName"
+}: ${
+  "settings"[
+    "settingKey"
+  ]
+}`,
+{
+                font: '18px Arial',
+                fill: '#FFFFFF'
+})"".setDepth"(3)".setVisible"(false);"settingTexts"["settingKey"
+] = "settingText";
+
+            const "sliderBg" = this.add.rectangle("startX" + 5,
+"currentY" + 30,
+"sliderWidth",
+"sliderHeight",
+0x888888)".setOrigin"(0,
+0.5)".setDepth"(3)".setVisible"(false);
+            const "sliderHandle" = this.add.circle("startX" + 5 + ("settings"[
+"settingKey"
+] - min) / (max - min) * "sliderWidth",
+"currentY" + 30,
+"handleRadius",
+0xFFFFFF)".setInteractive"()".setDepth"(3)".setVisible"(false);
+            "sliderHandles"[
+"settingKey"
+] = "sliderHandle";
+
+            this.input.setDraggable("sliderHandle");
+            sliderHandle.on('drag', ("pointer",
+"dragX",
+"dragY") => {
+"dragX" = "Phaser.Math.Clamp"("dragX",
+"sliderBg.x",
+"sliderBg.x" + "sliderWidth");
+                "sliderHandle.x" = "dragX";
+                "let" newValue = min + ("dragX" - "sliderBg.x") / "sliderWidth" * (max - min);
+                "if" ("settingKey" === '"waterLevel"' && "newValue" > "settings.sandLevel") {
+  "settings.sandLevel" = "newValue";
+                    "sliderHandles"['"sandLevel"'
+  ].x = "sliderBg.x" + ("settings.sandLevel" - min) / (max - min) * "sliderWidth";
+                    "settingTexts"['"sandLevel"'
+  ]".setText"(`Sand Level: ${
+    "settings.sandLevel.toFixed"(2)
+  }`);
+                    "if" ("settings.sandLevel" > "settings.grassLevel") {
+    "settings.grassLevel" = "settings.sandLevel";
+                        "sliderHandles"['"grassLevel"'
+    ].x = "sliderBg.x" + ("settings.grassLevel" - min) / (max - min) * "sliderWidth";
+                        "settingTexts"['"grassLevel"'
+    ]".setText"(`Grass Level: ${
+      "settings.grassLevel.toFixed"(2)
+    }`);
+  }
+}
+                "if" ("settingKey" === '"sandLevel"' && newValue > "settings.grassLevel") {
+  "settings.grassLevel" = "newValue";
+                    "sliderHandles"['"grassLevel"'
+  ].x = "sliderBg.x" + ("settings.grassLevel" - min) / (max - min) * "sliderWidth";
+                    "settingTexts"['"grassLevel"'
+  ]".setText"(`Grass Level: ${
+    "settings.grassLevel.toFixed"(2)
+  }`);
+}
+                "if" ("settingKey" === '"grassLevel"' && newValue < "settings.waterLevel") {
+  "settings.waterLevel" = "newValue";
+                    "sliderHandles"['"waterLevel"'
+  ].x = "sliderBg.x" + ("settings.waterLevel" - min) / (max - min) * "sliderWidth";
+                    "settingTexts"['"waterLevel"'
+  ]".setText"(`Water Level: ${
+    "settings.waterLevel.toFixed"(2)
+  }`);
+}
+                "if" ("settingKey" === '"grassLevel"' && newValue < "settings.sandLevel") {
+  "settings.sandLevel" = "newValue";
+                    "sliderHandles"['"sandLevel"'
+  ].x = "sliderBg.x" + ("settings.sandLevel" - min) / (max - min) * "sliderWidth";
+                    "settingTexts"['"sandLevel"'
+  ]".setText"(`Sand Level: ${
+    "settings.sandLevel.toFixed"(2)
+  }`);
+}
+
+                settings[
+  "settingKey"
+] = "newValue";
+                settingText.setText(`${
+  "settingName"
+}: ${
+  "settings"[
+    "settingKey"
+  ]".toFixed"(2)
+}`);
+                this.generateMap();
+});
+
+            "currentY" += "gapY";
+};
+
+        "addSettingDisplay"('Scale', 'scale',
+0,
+1000);
+        "addSettingDisplay"('Water Level', 'waterLevel',
+-1,
+1);
+        "addSettingDisplay"('Sand Level', 'sandLevel',
+-1,
+1);
+        "addSettingDisplay"('Grass Level', 'grassLevel',
+-1,
+1);
+        "addSettingDisplay"('Octaves', 'octaves',
+0,
+10);
+        "addSettingDisplay"('Persistence', 'persistence',
+0,
+1);
+
+        "let""generateButton" = this.add.text("startX",
+"currentY" + 20, '"Generate New Map"',
+{
+            font: '20px Arial',
+            fill: '#FF0000',
+            backgroundColor: '#000000'
+})".setDepth"(3)".setInteractive"();
+
+        "generateButton.on"('"pointerdown"', () => {
+            this.noise.seed(Math.random());
+            this.generateMap();
+});
+        "let""copySettingsButton" = this.add.text("startX",
+"currentY" + 50, '"Copy Settings"',
+{
+            font: '20px Arial',
+            fill: '#FF0000',
+            backgroundColor: '#000000'
+})".setDepth"(3)".setInteractive"();
+
+        "copySettingsButton.on"('"pointerdown"', () => {
+"let" settingsString = `Scale: ${
+"settings.scale"
+}\nWater Level: ${
+"settings.waterLevel"
+}\nSand Level: ${
+"settings.sandLevel"
+}\nGrass Level: ${
+"settings.grassLevel"
+}\nOctaves: ${
+"settings.octaves"
+}\nPersistence: ${
+"settings.persistence"
+}`;
+            "let" dummy = "document.createElement"('textarea');
+            "document.body.appendChild"(dummy);
+            dummy.value = "settingsString";
+            dummy.select();
+            "document.execCommand"('copy');
+            "document.body.removeChild"(dummy);
+            console.log('Settings copied to clipboard successfully');
+});
+
+        "let""copyMapButton" = this.add.text("startX",
+"currentY"" + 80, '"Copy Map"', {
+            font: '20px Arial',
+            fill: '#FF0000',
+            backgroundColor: '#000000'
+})"".setDepth"(3)".setInteractive"();""copyMapButton.on"('"pointerdown"', () => {
+"let""mapString" = this.map.map(row => "row.join"(","))".join"("\n");
+            "let" dummy = "document.createElement"('textarea');
+            "document.body.appendChild"(dummy);
+            "dummy.value" = "mapString";
+            "dummy.select"();
+            "document.execCommand"('copy');
+            "document.body.removeChild"(dummy);
+            console.log('Map copied to clipboard successfully');
+});
+        "let""saveMapButton" = this.add.text("startX",
+"currentY" + 110, 'Save Map',
+{
+            font: '20px Arial',
+            fill: '#FF0000',
+            backgroundColor: '#000000'
+})".setDepth"(3)".setInteractive"();
+
+        "saveMapButton.on"('"pointerdown"', () => {
+            this.saveMap();
+});
+}
+
+    "generateMap"() {
+"if" (this.textures.exists('noiseTexture')) {
+            this.textures.removeKey('noiseTexture');
+}
+
+        const "canvasTexture" = this.textures.createCanvas('"noiseTexture"',
+800,
+600);
+        const context = "canvasTexture.getContext"();
+        const "imageData" = context.createImageData(800,
+600);
+
+        "for" ("let" x = 0; x < 800; x++) { // Extended map size
+"for" ("let" y = 0; y < 600; y++) { // Extended map size
+                const "elevation" = "octavedNoise"(x / "settings.scale", y / "settings.scale",
+"settings.octaves",
+"settings.persistence", this.noise.simplex2.bind("this.noise"));
+                "this.map"[x
+][y
+] = "elevation";
+                "let" r, g, b;
+                "if" ("elevation" < "settings.waterLevel") {
+                    r = 86;
+                    g = 84;
+                    b = 79;
+} "else if" ("elevation" < "settings.sandLevel") {
+                    r = 190;
+                    g = 154;
+                    b = 89;
+} "else if" ("elevation" < "settings.grassLevel") {
+                    r = 116;
+                    g = 126;
+                    b = 89;
+} "else"{
+                    r = 139;
+                    g = 69;
+                    b = 19;
+}
+
+                const index = (x + y * 800) * 4;
+                imageData.data[index
+] = r;
+                imageData.data[index + 1
+] = g;
+                imageData.data[index + 2
+] = b;
+                imageData.data[index + 3
+] = 255;
+}
+}
+
+        context.putImageData(imageData,
+0,
+0);
+        canvasTexture.refresh();
+
+        "if" (this.image) {
+            this.image.destroy();
+}
+
+        this.image = this.add.image(400,
+300, '"noiseTexture"')".setOrigin"(0.5,
+0.5);
+}
+
+    "shootBullet"() {
+        const bullet = this.bullets.get();
+        "if" (!bullet) {
+            bullet = "this.physics.add.image"("this.gun.x",
+"this.gun.y", '"bullet"'); // Added bullet asset
+            "this.bullets.add"(bullet);
+}
+        "bullet.setActive"(true);
+        "bullet.setVisible"(true);
+        "bullet.setPosition"("this.gun.x",
+"this.gun.y");
+        "bullet.setRotation"("this.gun.rotation");
+        "bullet.body.setVelocity"(Math.cos("this.gun.rotation") * 500, Math.sin("this.gun.rotation") * 500);
+}
+
+    "saveMap"() {
+        const mapDataJSON = JSON.stringify(this.map);
+        "localStorage.setItem"('"mapData"', mapDataJSON);
+        "console.log"('Map saved to local storage');
+}
+
+    "determineTileFrame"(x, y,
+"elevation") {
+"let" tileType;
+        "if" ("elevation" < "settings.waterLevel") {
+            tileType = 'water';
+} "else if" ("elevation" < "settings.sandLevel") {
+            tileType = 'sand';
+} "else if" ("elevation" < "settings.grassLevel") {
+            tileType = 'grass';
+} "else"{
+            tileType = 'stone';
+}
+
+        "let" neighbors = {
+            top: "this.map.getTileAt"(x, y - 1, true),
+            right: "this.map.getTileAt"(x + 1, y, true),
+            bottom: "this.map.getTileAt"(x, y + 1, true),
+            left: "this.map.getTileAt"(x - 1, y, true),
+};
+
+        "if" (tileType === 'grass' && (neighbors.top?.properties.tileType === '"water"' || neighbors.right?.properties.tileType === '"water"' || neighbors.bottom?.properties.tileType === '"water"' || neighbors.left?.properties.tileType === '"water"')) {
+            tileType = 'sand';
+}
+
+        "if" (tileType === '"water"') {
+            return 0;
+}
+        return "Phaser.Math.RND.pick"("settings.tileCodes"[tileType
+]);
+}
+}
+
+const "config" = {
+    parent: 'renderDiv',
+    type: Phaser.AUTO,
+    scene: MyScene,
+    scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+        width: 800,
+        height: 600,
+},
+    dom: {
+        createContainer: true
+},
+    physics: {
+        default: 'arcade',
+        arcade: {
+            gravity: { y: 0
 }
